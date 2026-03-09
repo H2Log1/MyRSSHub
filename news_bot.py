@@ -14,7 +14,10 @@ FEEDS = {
     "🛠️ 技术论坛": [
         ["V2EX最新", "/v2ex/topics/latest"],
         ["GitHub Python趋势", "/github/trending/daily/python"],
+        ["GitHub C++趋势", "/github/trending/daily/c++"],
         ["arXiv机器人学", "/arxiv/query/cat:cs.RO"],
+        ["IEEE Spectrum机器人学", "/ieee/spectrum/topic/robotics"],
+        ["深度学习", "/arxiv/query/cat:cs.LG"],
     ],
     "🎮 游戏/白嫖": [
         ["Epic免费游戏", "/epicgames/freegames"],
