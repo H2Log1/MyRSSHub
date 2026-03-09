@@ -1,58 +1,62 @@
 import feedparser
 import requests
-import time
+import os
+import datetime
 
 # --- 配置区 ---
-RSSHUB_BASE = "http://103.193.173.151:1200/"
-SC_KEY = "SCT317875TktfM2bRrXLSRLDHQhLQFR9ov"
+# 从 GitHub Secrets 读取 Key
+SC_KEY = os.environ.get("SC_KEY")
+# 替换为你服务器的公网 IP
+SERVER_IP = "103.193.173.151"
+RSSHUB_URL = f"http://{SERVER_IP}:1200"
 
-# 定义你想要抓取的“所有”分类
 FEEDS = {
-    "🛠️ 技术与开发": [
-        f"{RSSHUB_BASE}/github/trending/daily/python",
-        f"{RSSHUB_BASE}/arxiv/query/cat:cs.RO",
-        f"{RSSHUB_BASE}/hackaday/blog",
-        f"{RSSHUB_BASE}/v2ex/topics/latest",
+    "🛠️ 技术论坛": [
+        ["V2EX最新", "/v2ex/topics/latest"],
+        ["GitHub Python趋势", "/github/trending/daily/python"],
+        ["arXiv机器人学", "/arxiv/query/cat:cs.RO"],
+    ],
+    "🎮 游戏/白嫖": [
+        ["Epic免费游戏", "/epicgames/freegames"],
+        ["Steam每日特惠", "/steam/special"],
+        ["机核网资讯", "/gcores/category/1"],
     ],
     "📰 实时新闻": [
-        f"{RSSHUB_BASE}/solidot/main",
-        f"{RSSHUB_BASE}/36kr/newsflashes",
-        f"{RSSHUB_BASE}/zaobao/realtime/china",
-    ],
-    "🎮 游戏资讯": [
-        f"{RSSHUB_BASE}/epicgames/freegames",
-        f"{RSSHUB_BASE}/steam/special",
-        f"{RSSHUB_BASE}/gcores/category/1",
-    ],
-    "🎬 影视番剧": [
-        f"{RSSHUB_BASE}/douban/movie/playing",
-        f"{RSSHUB_BASE}/bangumi/calendar/today",
+        ["36Kr快讯", "/36kr/newsflashes"],
+        ["联合早报", "/zaobao/realtime/china"],
     ],
 }
 
 
-def get_feed_content():
-    report = "# 🌍 每日全资讯汇总\n\n"
-    for category, urls in FEEDS.items():
-        report += f"## {category}\n"
-        for url in urls:
+def fetch_news():
+    today = datetime.date.today().strftime("%Y-%m-%d")
+    content = f"# 🤖 每日全资讯汇总 ({today})\n\n"
+
+    for cat, items in FEEDS.items():
+        content += f"## {cat}\n"
+        for name, path in items:
+            url = f"{RSSHUB_URL}{path}"
             try:
+                # 延长超时时间，防止服务器响应慢
                 feed = feedparser.parse(url)
-                # 每个源只取最新的 3 条，防止消息太长
+                if not feed.entries:
+                    continue
+                content += f"**【{name}】**\n"
                 for entry in feed.entries[:3]:
-                    report += f"* [{entry.title}]({entry.link})\n"
+                    content += f"* [{entry.title}]({entry.link})\n"
             except Exception as e:
-                print(f"抓取失败: {url}, 错误: {e}")
-        report += "\n---\n"
-    return report
+                print(f"抓取 {name} 失败: {e}")
+        content += "\n---\n"
+    return content
 
 
-def send_to_wechat(content):
+def push(text):
+    if not SC_KEY:
+        print("错误：未找到 SC_KEY")
+        return
     url = f"https://sctapi.ftqq.com/{SC_KEY}.send"
-    data = {"title": "🤖 你的私人日报已送达", "desp": content}
-    requests.post(url, data=data)
+    requests.post(url, data={"title": "☕ 你的私人报刊已送达", "desp": text})
 
 
 if __name__ == "__main__":
-    content = get_feed_content()
-    send_to_wechat(content)
+    push(fetch_news())

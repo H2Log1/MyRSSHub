@@ -1,0 +1,27 @@
+name: Daily News Dispatcher
+
+on:
+  schedule:
+    # 每天北京时间早上 8:00 (UTC 0:00)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允许手动点击运行进行测试
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install feedparser requests
+
+      - name: Run Push Script
+        env:
+          SC_KEY: ${{ secrets.SC_KEY }} # 映射 Secret 到环境变量
+        run: python news_push.py
